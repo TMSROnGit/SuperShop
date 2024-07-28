@@ -22,6 +22,7 @@ namespace SuperShop
             });
 
             builder.Services.AddTransient<SeedDb>();
+            builder.Services.AddScoped<IRepository, Repository>();
 
             var app = builder.Build();
 
