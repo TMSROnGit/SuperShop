@@ -1,4 +1,9 @@
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.EntityFrameworkCore;
+using System;
 using SuperShop.Data;
 
 namespace SuperShop
@@ -9,7 +14,6 @@ namespace SuperShop
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
             builder.Services.AddControllersWithViews();
 
             builder.Services.AddDbContext<DataContext>(cfg =>
@@ -17,15 +21,9 @@ namespace SuperShop
                 cfg.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
             });
 
-            var app = builder.Build();
+            builder.Services.AddTransient<SeedDb>();
 
-            // Configure the HTTP request pipeline.
-            if (!app.Environment.IsDevelopment())
-            {
-                app.UseExceptionHandler("/Home/Error");
-                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-                app.UseHsts();
-            }
+            var app = builder.Build();
 
             app.UseHttpsRedirection();
             app.UseStaticFiles();
@@ -38,7 +36,19 @@ namespace SuperShop
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}/{id?}");
 
+            RunSeeding(app);
+
             app.Run();
+        }
+
+        private static void RunSeeding(IHost host)
+        {
+            var scopeFactory = host.Services.GetService<IServiceScopeFactory>();
+            using (var scope = scopeFactory.CreateScope())
+            {
+                var seeder = scope.ServiceProvider.GetService<SeedDb>();
+                seeder.SeedAsync().Wait();
+            }
         }
     }
 }
